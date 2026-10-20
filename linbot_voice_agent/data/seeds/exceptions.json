@@ -1,0 +1,32 @@
+{
+  "events": [
+    {
+      "id": "navigation_failed",
+      "description": "当前任务失败，不更新到达状态"
+    },
+    {
+      "id": "timeout",
+      "description": "当前任务超时"
+    },
+    {
+      "id": "blocked",
+      "description": "当前路线中断"
+    },
+    {
+      "id": "destination_closed",
+      "description": "任务目的地临时关闭"
+    },
+    {
+      "id": "low_battery",
+      "description": "低电量导致任务失败"
+    },
+    {
+      "id": "emergency",
+      "description": "取消普通导航，等待人工处理"
+    },
+    {
+      "id": "clear_emergency",
+      "description": "仅模拟操作员解除紧急状态"
+    }
+  ]
+}

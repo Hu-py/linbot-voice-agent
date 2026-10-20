@@ -1,0 +1,197 @@
+{
+  "synthetic": true,
+  "profiles": [
+    {
+      "id": "patient_01",
+      "name": "虚拟患者01",
+      "synthetic": true,
+      "workflow_id": "booked_visit",
+      "appointment_department": "cardiology",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": true,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_02",
+      "name": "虚拟患者02",
+      "synthetic": true,
+      "workflow_id": "first_visit",
+      "appointment_department": "internal_medicine",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": false,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_03",
+      "name": "虚拟患者03",
+      "synthetic": true,
+      "workflow_id": "medication_pickup",
+      "appointment_department": "cardiology",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": true,
+        "checked_in": true,
+        "consultation_completed": true,
+        "paid": true,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_04",
+      "name": "虚拟患者04",
+      "synthetic": true,
+      "workflow_id": "ordered_lab",
+      "appointment_department": "internal_medicine",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": true,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": true
+      }
+    },
+    {
+      "id": "patient_05",
+      "name": "虚拟患者05",
+      "synthetic": true,
+      "workflow_id": "assisted_visit",
+      "appointment_department": "cardiology",
+      "current_location": "entrance",
+      "needs_accessibility": true,
+      "facts": {
+        "registered": true,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_06",
+      "name": "虚拟患者06",
+      "synthetic": true,
+      "workflow_id": "booked_visit",
+      "appointment_department": "internal_medicine",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": true,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_07",
+      "name": "虚拟患者07",
+      "synthetic": true,
+      "workflow_id": "first_visit",
+      "appointment_department": "cardiology",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": false,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_08",
+      "name": "虚拟患者08",
+      "synthetic": true,
+      "workflow_id": "medication_pickup",
+      "appointment_department": "internal_medicine",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": true,
+        "checked_in": true,
+        "consultation_completed": true,
+        "paid": true,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_09",
+      "name": "虚拟患者09",
+      "synthetic": true,
+      "workflow_id": "ordered_lab",
+      "appointment_department": "cardiology",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": true,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": true
+      }
+    },
+    {
+      "id": "patient_10",
+      "name": "虚拟患者10",
+      "synthetic": true,
+      "workflow_id": "assisted_visit",
+      "appointment_department": "internal_medicine",
+      "current_location": "entrance",
+      "needs_accessibility": true,
+      "facts": {
+        "registered": true,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_11",
+      "name": "虚拟患者11",
+      "synthetic": true,
+      "workflow_id": "booked_visit",
+      "appointment_department": "cardiology",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": true,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    },
+    {
+      "id": "patient_12",
+      "name": "虚拟患者12",
+      "synthetic": true,
+      "workflow_id": "first_visit",
+      "appointment_department": "internal_medicine",
+      "current_location": "entrance",
+      "needs_accessibility": false,
+      "facts": {
+        "registered": false,
+        "checked_in": false,
+        "consultation_completed": false,
+        "paid": false,
+        "has_lab_order": false
+      }
+    }
+  ]
+}

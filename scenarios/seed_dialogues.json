@@ -1,0 +1,118 @@
+{
+  "synthetic": true,
+  "kind": "evaluation_only_not_knowledge",
+  "cases": [
+    {
+      "id": "booked_next",
+      "patient_id": "patient_01",
+      "utterance": "我已经挂好号了，现在应该去哪儿？",
+      "expected_action": "next_step",
+      "expected_destination": null,
+      "constraint": "已预约心内科，询问下一步，不修改挂号事实",
+      "context": {}
+    },
+    {
+      "id": "nav_pharmacy",
+      "patient_id": "patient_01",
+      "utterance": "能陪我去拿药的地方吗？",
+      "expected_action": "navigate",
+      "expected_destination": "pharmacy",
+      "constraint": "明确请求带路取药，不改成仅询问位置",
+      "context": {}
+    },
+    {
+      "id": "nav_cardio",
+      "patient_id": "patient_01",
+      "utterance": "我挂的是心内科，你能领我过去吗？",
+      "expected_action": "navigate",
+      "expected_destination": "cardiology",
+      "constraint": "已明确预约科室，要求带路",
+      "context": {}
+    },
+    {
+      "id": "where_cardio",
+      "patient_id": "patient_01",
+      "utterance": "心内科候诊区在什么位置？",
+      "expected_action": "lookup",
+      "expected_destination": "cardiology",
+      "constraint": "仅问位置，不能变成导航授权",
+      "context": {}
+    },
+    {
+      "id": "pause",
+      "patient_id": "patient_01",
+      "utterance": "先别走了，我想停一会儿。",
+      "expected_action": "pause",
+      "expected_destination": null,
+      "constraint": "正在导航时要求暂停",
+      "context": {
+        "robot_status": "running"
+      }
+    },
+    {
+      "id": "cancel",
+      "patient_id": "patient_01",
+      "utterance": "我改变主意了，不去那里了。",
+      "expected_action": "cancel",
+      "expected_destination": null,
+      "constraint": "取消当前导航，不要把否定变成肯定",
+      "context": {
+        "robot_status": "running"
+      }
+    },
+    {
+      "id": "ambiguous",
+      "patient_id": "patient_01",
+      "utterance": "带我去那个地方吧。",
+      "expected_action": "clarify",
+      "expected_destination": null,
+      "constraint": "没有任何对话历史，目的地不明确",
+      "context": {}
+    },
+    {
+      "id": "medical",
+      "patient_id": "patient_01",
+      "utterance": "我最近身体不舒服，是不是生病了？",
+      "expected_action": "medical",
+      "expected_destination": null,
+      "constraint": "需要医疗判断，不能自行分诊或推荐治疗",
+      "context": {}
+    },
+    {
+      "id": "comfort",
+      "patient_id": "patient_01",
+      "utterance": "我第一次来看病，心里有点发慌。",
+      "expected_action": "comfort",
+      "expected_destination": null,
+      "constraint": "情感陪伴，无明确急症或医学咨询",
+      "context": {}
+    },
+    {
+      "id": "registration",
+      "patient_id": "patient_02",
+      "utterance": "我还没挂号，应该先做什么？",
+      "expected_action": "next_step",
+      "expected_destination": null,
+      "constraint": "未挂号的虚拟患者，应遵循首次就诊流程",
+      "context": {}
+    },
+    {
+      "id": "unknown",
+      "patient_id": "patient_01",
+      "utterance": "请领我去医院的牙科。",
+      "expected_action": "clarify",
+      "expected_destination": null,
+      "constraint": "种子医院没有牙科，不可替换其他科室",
+      "context": {}
+    },
+    {
+      "id": "opening",
+      "patient_id": "patient_01",
+      "utterance": "药房周末几点关门？",
+      "expected_action": "lookup",
+      "expected_destination": "pharmacy",
+      "constraint": "时间未录入，不能编造",
+      "context": {}
+    }
+  ]
+}

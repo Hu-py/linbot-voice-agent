@@ -1,101 +1,161 @@
-# Linbot Voice Agent · 聆灵陪诊语音交互
+# Linbot Voice Agent · 聆灵自然语言陪诊 Agent
 
-第一阶段可运行原型：**文本输入 → 意图与会话状态 → 医院知识查询 / 模拟工具 → 文字回复**。
+v0.2：**LLM 理解多轮需求 + 医院知识检索 + 受控工具 + 虚拟医院事件闭环**。
 
-当前仅有文本与模拟机器人，未连接 ASR、TTS、ROS 2 或真实导航。所有内置医院地点和路线都是虚构示例，不能用于实际导诊。
+这里是软件原型，所有默认医院/患者数据均为虚构。导航、乘梯、求助均在模拟器内；未接入真实机器人、医院系统或医护联络服务。
 
-## 快速开始（Python 3.10+）
+## 1. 无密钥先跑完整心内科案例
 
-不需要模型密钥或第三方运行依赖：
+Python 3.10+，无第三方运行依赖：
 
 ```bash
 git clone https://github.com/Hu-py/linbot-voice-agent.git
 cd linbot-voice-agent
+python3 -m linbot_voice_agent --scenario-demo
+```
+
+已有仓库先运行 `git pull --ff-only`。
+
+演示：已预约心内科的患者询问下一步 → 提出三楼心内科候诊区导航 → 患者确认 → 返回任务 ID → 服务台 → 电梯厅 → 模拟完成事件 → 更新位置并提示报到。
+
+**无密钥的 `--scenario-demo` 使用固定计划，只验证状态与事件闭环，不代表已验证真实 LLM 理解能力。**
+
+原有离线规则模式仍可使用：
+
+```bash
 python3 -m linbot_voice_agent --demo --show-tools
 python3 -m linbot_voice_agent
 ```
 
-可选安装命令行入口：
+## 2. 使用真正的 LLM 自由对话
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
-linbot --demo
-```
-
-交互试试：
-
-```text
-心内科在哪里
-怎么过去
-那药房呢
-带我去药房
-好
-等一下，我想先去厕所
-好
-到了吗
-取消
-```
-
-`/reset` 清空会话并取消模拟任务；`/quit` 退出。`--show-tools` 展示意图与模拟工具事件。不会自动生成到达反馈。
-
-## 已实现
-
-- 医院地点问答、路线说明和示例就诊流程查询。
-- 会话内目的地记忆、代词引用、挂号状态记录、导航二次确认。
-- 导航、暂停、恢复、取消、状态查询、人工求助的模拟接口。
-- 未知目的地澄清、多地点澄清、部分否定表达识别和失效确认清理。
-- 紧急关键词优先处理，明确说明求助未实际发出；用药及诊断类关键词转介医护。
-- 可选模型 API 意图分类、输出校验、超时回退。
-- 20 项自动测试和 GitHub Actions 配置。
-
-离线模式使用规则和模板，不是通用大模型。模型模式对规则未覆盖的表达进行意图分类，回复仍以受控模板和本地知识为准；暂未实现开放式生成聊天、RAG、语音打断或完整临床风险识别。
-
-## 可选模型模式
-
-支持提供 `/chat/completions` 的 HTTPS 服务，返回文本需为 JSON。具体模型的兼容性需用真实账号验证。密钥仅从环境变量读取，不要提交到仓库。
+配置提供 `/chat/completions` 的 HTTPS 模型服务：
 
 ```bash
 export LINBOT_BASE_URL='https://your-provider.example/v1'
 export LINBOT_MODEL='your-model-name'
 read -rsp 'API key: ' LINBOT_API_KEY; echo
 export LINBOT_API_KEY
-python3 -m linbot_voice_agent --mode llm --show-tools
+python3 -m linbot_voice_agent --mode llm --synthetic --patient patient_01 --show-tools --show-sources
 ```
 
-`.env.example` 仅作配置说明，不会自动加载。请求超时为 15 秒；格式错误、未知地点 ID、未知意图和请求失败均回退。对话默认只存在内存中；模型模式会将未被本地规则识别的输入及最小会话状态发送至配置的服务，请先用模拟信息测试。
+以上模型名称和地址为占位符。请填入自己的服务配置，密钥不要提交到 GitHub。`.env.example` 不会自动加载。
 
-## 修改医院数据
-
-复制 `linbot_voice_agent/data/hospital.example.json`，修改 `name`、`places` 和 `flow`，再执行：
-
-```bash
-python3 -m linbot_voice_agent --hospital /path/to/hospital.json
-```
-
-地点需要唯一 `id`、名称 `name`、别名列表 `aliases`、位置 `location`、文字路线 `route`。只有经医院核实的数据才应设 `is_example: false`。当前路线是固定服务台起点的文字说明，不根据机器人实时位置规划路径；楼层信息不意味着具备乘梯能力。
-
-## 代码结构
+可以自然表达：
 
 ```text
-linbot_voice_agent/
-  agent.py          # 会话、规则、确认与意图路由
-  knowledge.py      # 加载、校验、匹配医院信息
-  llm.py            # 可选模型意图分类及输出校验
-  robot.py          # RobotPort 接口与 MockRobot
-  cli.py            # 交互终端、演示与工具事件展示
-  data/             # 虚构医院数据
- tests/             # 行为与模型响应测试
- docs/              # 架构说明和第二阶段接入清单
+我已经挂好号了，现在应该去哪儿？
+好，带我过去。
 ```
 
-## 测试
+随后输入三次 `/tick`，模拟器才会走到心内科；不会因为模型说“到了”而修改位置。
+
+```text
+/tick
+/tick
+/tick
+/event checked_in
+/event consultation_completed
+接下来应该做什么？
+```
+
+后续可导航到缴费处、注入 `payment_completed`，再前往药房、注入 `medication_collected`。操作员事件是模拟医院反馈，不应由 LLM 自己生成。
+
+也可以尝试“我想先找个地方坐一会儿”“先别走了”“我只是问问位置，不需要带路”。普通提问由 LLM 处理；暂停/取消等少量明确控制语句本地优先处理。导航和恢复仍需明确确认；模型推断的模糊肯定不能单独启动动作。
+
+| 命令 | 作用 |
+|---|---|
+| `/tick` | 推进一步模拟导航，完成时发出事件 |
+| `/patient` | 查看虚拟患者已核实状态 |
+| `/next` | 直接调用确定性流程引擎，查看/提出下一步 |
+| `/event checked_in` | 模拟报到完成（必须已到预约科室） |
+| `/event consultation_completed` | 模拟就诊完成（必须已报到） |
+| `/event payment_completed` | 模拟缴费完成（必须满足流程前提） |
+| `/event medication_collected` | 模拟领取药品 |
+| `/event navigation_failed` | 当前导航失败 |
+| `/event emergency` | 中断普通陪诊并进入虚拟紧急状态 |
+| `/event clear_emergency` | 模拟操作员解除紧急状态 |
+| `/reset` | 清空对话并重置虚拟患者和模拟环境 |
+| `/quit` | 退出 |
+
+不加载患者场景也可以使用知识问答：
+
+```bash
+python3 -m linbot_voice_agent --mode llm --show-sources
+```
+
+## 3. 虚拟医院的规模与规则
+
+| 模块 | 当前内容 |
+|---|---|
+| 空间 | 3 层、12 地点、连通路网与虚拟电梯边 |
+| 服务 | 6 类服务，包含门诊、检验、影像、药房、咨询和无障碍支持 |
+| 流程 | 5 条：首次就诊、预约门诊、已缴费取药、已安排检验、人工协助后就诊 |
+| 患者 | 12 个无真实身份信息的档案 |
+| 导航状态 | idle、running、paused、completed、cancelled、failed、emergency；取消后回 idle |
+| 异常 | 导航失败、超时、路径中断、目的地关闭、低电量、紧急状态、解除紧急状态 |
+
+到达不等于报到，报到不等于完成就诊，前往药房不等于已取药。患者自述不会直接修改这些事实。流程规则与模拟事件共同控制状态转换。
+
+## 4. 医院知识与合成对话分开
+
+`seeds/` 是事实、流程和患者状态的唯一可编辑源；`scenarios/` 是测试表达与多轮场景，绝不作为检索知识。
+
+```text
+seeds/
+  hospital.json             # 地点、路网、服务知识与来源
+  workflows.json            # 前置条件、步骤、完成事件
+  patient_profiles.json     # 虚拟患者状态组合
+  exceptions.json           # 异常事件目录
+scenarios/
+  seed_dialogues.json       # 12 个单轮语义测试种子
+  multi_turn.json           # 6 个多轮场景（含完整就诊、暂停、换目的地等）
+```
+
+修改种子后同步安装包内副本：
+
+```bash
+python3 scripts/sync_seeds.py
+```
+
+开发时也可直接读取源文件：`--seed-dir seeds`。
+
+LLM 可以扩写表达与多轮用户行为，但不能修改事实、规则、操作员事件或预期结果。生成器已实现，需配置密钥后运行：
+
+```bash
+python3 -m linbot_voice_agent.synthetic_data generate --output scenarios/generated_dialogues.json --variants 3
+python3 -m linbot_voice_agent.synthetic_data generate-multiturn --input scenarios/multi_turn.json --output scenarios/generated_multiturn.json
+```
+
+生成结果标记 `needs_human_review`，需检查是否语义漂移。生成器拒绝写入事实种子目录及覆盖现有文件。当前仓库只包含种子，未用真实 LLM 扩写数据。
+
+真实模型评估（会产生 API 请求）：
+
+```bash
+python3 -m linbot_voice_agent.synthetic_data evaluate --output scenarios/evaluation.json
+python3 -m linbot_voice_agent.synthetic_data evaluate-multiturn --input scenarios/multi_turn.json --output scenarios/evaluation_multiturn.json
+```
+
+## 5. 实现方式
+
+- 普通输入首先调用 LLM 规划，携带最近最多 12 条历史消息与当前状态。
+- 查询动作先检索本地医院知识，再让 LLM 基于本轮证据生成回答，并校验引用 ID。
+- 当前检索为中文双字片段与关键词匹配；规模小，便于检查，不依赖向量数据库。
+- 工具层校验白名单、地点有效性、确认令牌和 60 秒有效期。确认一次即失效。
+- 模型错误或非法输出时，只回退本地信息；不凭失败输出启动新动作。
+- 模拟器发出带事件 ID、任务 ID 的进度和完成事件，忽略过期任务的完成事件和重复事件。
+- 固定控制结果由程序生成，避免让模型编造“已到达”“已通知医护”。
+
+## 6. 测试与边界
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-覆盖上下文、确认、否定、任务切换、未知地点、模型超时/非法输出、模拟动作失败及求助场景。模型请求测试使用 mock；本版本未用真实密钥调用外部模型，也未测试真机。
+测试覆盖原有规则、模型协议、检索与引用、确认失效、防重复执行、完整就诊流程、12 个患者的流程可完成性、异常中断、非法跳步、数据隔离和种子一致性。模型调用在自动测试中使用 mock；真实模型语义质量、供应商兼容性和现场语音尚未验证。
 
-下一步见 [第二阶段接入清单](docs/phase2.md) 和 [架构说明](docs/architecture.md)。
+事实引用 ID 校验不能证明整段回答完全忠于证据；语义理解、临床风险识别和否定处理仍可能出错。原型只用于虚拟场景。真实机器人接入仍需独立异步控制、急停、状态锁与真实反馈验证。
+
+对话仅保留内存，模型模式会把当前输入、最近历史、虚拟患者状态及检索资料发送至所配置服务。每次请求超时 15 秒，问答最多两次请求；当前终端同步等待，不具备模型请求期间实时打断能力。
+
+详细说明：[架构](docs/architecture.md) · [虚拟医院](docs/synthetic_environment.md) · [知识库维护](docs/knowledge.md) · [真机接入准备](docs/phase2.md)

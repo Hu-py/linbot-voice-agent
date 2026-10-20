@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "workflows": [
+    {
+      "id": "first_visit",
+      "name": "首次挂号门诊取药",
+      "steps": [
+        {
+          "id": "go_registration",
+          "kind": "navigate",
+          "target": "registration",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "registration_completed",
+          "kind": "event",
+          "event": "registration_completed",
+          "completion": "registered",
+          "requires": [],
+          "location": "registration",
+          "instruction": "请在挂号处完成挂号；模拟事件确认后再继续。"
+        },
+        {
+          "id": "go_clinic",
+          "kind": "navigate",
+          "target": "$appointment",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "checked_in",
+          "kind": "event",
+          "event": "checked_in",
+          "completion": "checked_in",
+          "requires": [
+            "registered"
+          ],
+          "location": "$appointment",
+          "instruction": "已到候诊区，请按现场指引报到，等待叫号。"
+        },
+        {
+          "id": "consultation_completed",
+          "kind": "event",
+          "event": "consultation_completed",
+          "completion": "consultation_completed",
+          "requires": [
+            "checked_in"
+          ],
+          "location": "$appointment",
+          "instruction": "请等候并完成医生接诊；系统不能代替医生确认就诊完成。"
+        },
+        {
+          "id": "go_payment",
+          "kind": "navigate",
+          "target": "payment",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "payment_completed",
+          "kind": "event",
+          "event": "payment_completed",
+          "completion": "paid",
+          "requires": [
+            "consultation_completed"
+          ],
+          "location": "payment",
+          "instruction": "请按照缴费通知办理缴费。"
+        },
+        {
+          "id": "go_pharmacy",
+          "kind": "navigate",
+          "target": "pharmacy",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "medication_collected",
+          "kind": "event",
+          "event": "medication_collected",
+          "completion": "medication_collected",
+          "requires": [
+            "paid"
+          ],
+          "location": "pharmacy",
+          "instruction": "请按取药通知向药师领取药品。"
+        }
+      ]
+    },
+    {
+      "id": "booked_visit",
+      "name": "已预约门诊取药",
+      "steps": [
+        {
+          "id": "go_clinic",
+          "kind": "navigate",
+          "target": "$appointment",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "checked_in",
+          "kind": "event",
+          "event": "checked_in",
+          "completion": "checked_in",
+          "requires": [
+            "registered"
+          ],
+          "location": "$appointment",
+          "instruction": "已到候诊区，请按现场指引报到，等待叫号。"
+        },
+        {
+          "id": "consultation_completed",
+          "kind": "event",
+          "event": "consultation_completed",
+          "completion": "consultation_completed",
+          "requires": [
+            "checked_in"
+          ],
+          "location": "$appointment",
+          "instruction": "请等候并完成医生接诊；系统不能代替医生确认就诊完成。"
+        },
+        {
+          "id": "go_payment",
+          "kind": "navigate",
+          "target": "payment",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "payment_completed",
+          "kind": "event",
+          "event": "payment_completed",
+          "completion": "paid",
+          "requires": [
+            "consultation_completed"
+          ],
+          "location": "payment",
+          "instruction": "请按照缴费通知办理缴费。"
+        },
+        {
+          "id": "go_pharmacy",
+          "kind": "navigate",
+          "target": "pharmacy",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "medication_collected",
+          "kind": "event",
+          "event": "medication_collected",
+          "completion": "medication_collected",
+          "requires": [
+            "paid"
+          ],
+          "location": "pharmacy",
+          "instruction": "请按取药通知向药师领取药品。"
+        }
+      ]
+    },
+    {
+      "id": "medication_pickup",
+      "name": "已就诊缴费后的取药",
+      "steps": [
+        {
+          "id": "go_pharmacy",
+          "kind": "navigate",
+          "target": "pharmacy",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "medication_collected",
+          "kind": "event",
+          "event": "medication_collected",
+          "completion": "medication_collected",
+          "requires": [
+            "paid"
+          ],
+          "location": "pharmacy",
+          "instruction": "请凭取药通知领取药品。"
+        }
+      ]
+    },
+    {
+      "id": "ordered_lab",
+      "name": "已有检查安排的检验",
+      "steps": [
+        {
+          "id": "go_laboratory",
+          "kind": "navigate",
+          "target": "laboratory",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "lab_completed",
+          "kind": "event",
+          "event": "lab_completed",
+          "completion": "lab_completed",
+          "requires": [
+            "has_lab_order"
+          ],
+          "location": "laboratory",
+          "instruction": "请按已有检查通知办理；不推断检查项目或准备要求。"
+        }
+      ]
+    },
+    {
+      "id": "assisted_visit",
+      "name": "先取得人工协助再就诊",
+      "steps": [
+        {
+          "id": "go_service_desk",
+          "kind": "navigate",
+          "target": "service_desk",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "assistance_arranged",
+          "kind": "event",
+          "event": "assistance_arranged",
+          "completion": "assistance_arranged",
+          "requires": [],
+          "location": "service_desk",
+          "instruction": "请在服务台获取人工协助；此处只模拟确认。"
+        },
+        {
+          "id": "go_clinic",
+          "kind": "navigate",
+          "target": "$appointment",
+          "completion": "visited",
+          "instruction": "前往指定服务地点"
+        },
+        {
+          "id": "checked_in",
+          "kind": "event",
+          "event": "checked_in",
+          "completion": "checked_in",
+          "requires": [
+            "registered"
+          ],
+          "location": "$appointment",
+          "instruction": "已到候诊区，请按现场指引报到，等待叫号。"
+        },
+        {
+          "id": "consultation_completed",
+          "kind": "event",
+          "event": "consultation_completed",
+          "completion": "consultation_completed",
+          "requires": [
+            "checked_in"
+          ],
+          "location": "$appointment",
+          "instruction": "请等候并完成医生接诊；系统不能代替医生确认就诊完成。"
+        }
+      ]
+    }
+  ]
+}

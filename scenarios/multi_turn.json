@@ -1,0 +1,271 @@
+{
+  "synthetic": true,
+  "kind": "evaluation_only_not_knowledge",
+  "scenarios": [
+    {
+      "id": "normal",
+      "patient_id": "patient_01",
+      "steps": [
+        {
+          "kind": "user",
+          "text": "我已经挂好号了，现在应该去哪儿？",
+          "expected_intent": "confirm",
+          "constraint": "询问预约心内科患者的下一步",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "好，带我过去",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "tick_until_done",
+          "max_ticks": 20
+        },
+        {
+          "kind": "event",
+          "name": "checked_in"
+        },
+        {
+          "kind": "event",
+          "name": "consultation_completed"
+        },
+        {
+          "kind": "user",
+          "text": "接下来去哪儿？",
+          "expected_intent": "confirm",
+          "constraint": "保留原意，不增删条件",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "确认",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "tick_until_done",
+          "max_ticks": 20
+        },
+        {
+          "kind": "event",
+          "name": "payment_completed"
+        },
+        {
+          "kind": "user",
+          "text": "下一步呢？",
+          "expected_intent": "confirm",
+          "constraint": "保留原意，不增删条件",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "确认",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "tick_until_done",
+          "max_ticks": 20
+        },
+        {
+          "kind": "event",
+          "name": "medication_collected"
+        }
+      ],
+      "expected": {
+        "location": "pharmacy",
+        "facts": {
+          "medication_collected": true
+        }
+      }
+    },
+    {
+      "id": "pause_resume",
+      "patient_id": "patient_01",
+      "steps": [
+        {
+          "kind": "user",
+          "text": "我已经挂好号了，现在应该去哪儿？",
+          "expected_intent": "confirm",
+          "constraint": "询问预约心内科患者的下一步",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "好，带我过去",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "user",
+          "text": "先别走，我想停一会儿",
+          "expected_intent": "pause",
+          "constraint": "保留原意，不增删条件",
+          "editable": true
+        },
+        {
+          "kind": "tick",
+          "count": 2
+        },
+        {
+          "kind": "user",
+          "text": "现在可以继续了吗，恢复带路吧",
+          "expected_intent": "confirm",
+          "constraint": "保留原意，不增删条件",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "确认",
+          "expected_intent": "resume",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "tick_until_done",
+          "max_ticks": 20
+        }
+      ],
+      "expected": {
+        "location": "cardiology",
+        "facts": {
+          "checked_in": false
+        }
+      }
+    },
+    {
+      "id": "change_destination",
+      "patient_id": "patient_01",
+      "steps": [
+        {
+          "kind": "user",
+          "text": "我已经挂好号了，现在应该去哪儿？",
+          "expected_intent": "confirm",
+          "constraint": "询问预约心内科患者的下一步",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "好，带我过去",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "user",
+          "text": "我改主意了，请先带我去厕所",
+          "expected_intent": "confirm",
+          "constraint": "保留原意，不增删条件",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "确认",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "tick_until_done",
+          "max_ticks": 20
+        }
+      ],
+      "expected": {
+        "location": "restroom",
+        "facts": {
+          "checked_in": false
+        }
+      }
+    },
+    {
+      "id": "ambiguous",
+      "patient_id": "patient_01",
+      "steps": [
+        {
+          "kind": "user",
+          "text": "带我去那个地方吧",
+          "expected_intent": "clarify",
+          "constraint": "无历史且目标不明确，不得补充科室",
+          "editable": true
+        }
+      ],
+      "expected": {
+        "location": "entrance",
+        "facts": {
+          "checked_in": false
+        }
+      }
+    },
+    {
+      "id": "navigation_failure",
+      "patient_id": "patient_01",
+      "steps": [
+        {
+          "kind": "user",
+          "text": "我已经挂好号了，现在应该去哪儿？",
+          "expected_intent": "confirm",
+          "constraint": "询问预约心内科患者的下一步",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "好，带我过去",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "event",
+          "name": "navigation_failed"
+        }
+      ],
+      "expected": {
+        "location": "entrance",
+        "facts": {
+          "checked_in": false
+        },
+        "status": "failed"
+      }
+    },
+    {
+      "id": "emergency",
+      "patient_id": "patient_01",
+      "steps": [
+        {
+          "kind": "user",
+          "text": "我已经挂好号了，现在应该去哪儿？",
+          "expected_intent": "confirm",
+          "constraint": "询问预约心内科患者的下一步",
+          "editable": true
+        },
+        {
+          "kind": "user",
+          "text": "好，带我过去",
+          "expected_intent": "navigate",
+          "constraint": "保留原意，不增删条件",
+          "editable": false
+        },
+        {
+          "kind": "user",
+          "text": "有人晕倒了，请帮忙",
+          "expected_intent": "help",
+          "constraint": "保留明确紧急求助，不改为假设或否定",
+          "editable": true
+        }
+      ],
+      "expected": {
+        "location": "entrance",
+        "facts": {
+          "checked_in": false
+        },
+        "emergency": true
+      }
+    }
+  ]
+}

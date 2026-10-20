@@ -9,6 +9,7 @@ class Reply:
     intent: str
     events: list = field(default_factory=list)
     degraded: bool = False
+    sources: list = field(default_factory=list)
 
 class Agent:
     def __init__(self, knowledge=None, robot=None, model=None):

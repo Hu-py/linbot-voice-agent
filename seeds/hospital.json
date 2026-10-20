@@ -1,0 +1,268 @@
+{
+  "name": "聆灵虚拟医院",
+  "is_example": true,
+  "synthetic": true,
+  "version": 1,
+  "floors": [
+    1,
+    2,
+    3
+  ],
+  "source": "Synthetic Hospital v1：虚构种子，仅用于软件测试",
+  "places": [
+    {
+      "id": "entrance",
+      "name": "医院入口",
+      "floor": 1,
+      "location": "1楼大厅",
+      "aliases": [
+        "入口"
+      ],
+      "route": "从服务台按院内标识前往1楼大厅的医院入口；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "registration",
+      "name": "挂号处",
+      "floor": 1,
+      "location": "1楼大厅",
+      "aliases": [
+        "挂号窗口",
+        "挂号处"
+      ],
+      "route": "从服务台按院内标识前往1楼大厅的挂号处；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "service_desk",
+      "name": "服务台",
+      "floor": 1,
+      "location": "1楼大厅",
+      "aliases": [
+        "服务台",
+        "人工咨询"
+      ],
+      "route": "从服务台按院内标识前往1楼大厅的服务台；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "payment",
+      "name": "缴费处",
+      "floor": 1,
+      "location": "1楼大厅",
+      "aliases": [
+        "缴费处",
+        "收费窗口"
+      ],
+      "route": "从服务台按院内标识前往1楼大厅的缴费处；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "pharmacy",
+      "name": "药房",
+      "floor": 1,
+      "location": "1楼B区",
+      "aliases": [
+        "药房",
+        "取药处",
+        "拿药"
+      ],
+      "route": "从服务台按院内标识前往1楼B区的药房；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "restroom",
+      "name": "卫生间",
+      "floor": 1,
+      "location": "1楼C区",
+      "aliases": [
+        "厕所",
+        "卫生间",
+        "洗手间"
+      ],
+      "route": "从服务台按院内标识前往1楼C区的卫生间；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "rest_area",
+      "name": "休息区",
+      "floor": 1,
+      "location": "1楼大厅东侧",
+      "aliases": [
+        "休息区",
+        "座椅"
+      ],
+      "route": "从服务台按院内标识前往1楼大厅东侧的休息区；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "elevator",
+      "name": "电梯厅",
+      "floor": 1,
+      "location": "1楼大厅北侧",
+      "aliases": [
+        "电梯厅"
+      ],
+      "route": "从服务台按院内标识前往1楼大厅北侧的电梯厅；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "laboratory",
+      "name": "检验科",
+      "floor": 2,
+      "location": "2楼A区",
+      "aliases": [
+        "检验科",
+        "抽血处"
+      ],
+      "route": "从服务台按院内标识前往2楼A区的检验科；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "imaging",
+      "name": "影像科",
+      "floor": 2,
+      "location": "2楼B区",
+      "aliases": [
+        "影像科",
+        "放射科"
+      ],
+      "route": "从服务台按院内标识前往2楼B区的影像科；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "cardiology",
+      "name": "心内科候诊区",
+      "floor": 3,
+      "location": "3楼A区",
+      "aliases": [
+        "心内科",
+        "心内科候诊区"
+      ],
+      "route": "从服务台按院内标识前往3楼A区的心内科候诊区；跨楼层使用虚拟电梯。"
+    },
+    {
+      "id": "internal_medicine",
+      "name": "内科候诊区",
+      "floor": 3,
+      "location": "3楼B区",
+      "aliases": [
+        "普通内科",
+        "内科候诊区"
+      ],
+      "route": "从服务台按院内标识前往3楼B区的内科候诊区；跨楼层使用虚拟电梯。"
+    }
+  ],
+  "edges": [
+    [
+      "entrance",
+      "service_desk"
+    ],
+    [
+      "service_desk",
+      "registration"
+    ],
+    [
+      "service_desk",
+      "payment"
+    ],
+    [
+      "payment",
+      "pharmacy"
+    ],
+    [
+      "service_desk",
+      "restroom"
+    ],
+    [
+      "service_desk",
+      "rest_area"
+    ],
+    [
+      "service_desk",
+      "elevator"
+    ],
+    [
+      "elevator",
+      "laboratory"
+    ],
+    [
+      "laboratory",
+      "imaging"
+    ],
+    [
+      "elevator",
+      "cardiology"
+    ],
+    [
+      "cardiology",
+      "internal_medicine"
+    ]
+  ],
+  "flow": "虚拟门诊流程：挂号→到预约科室→报到候诊→就诊→缴费→药房取药。每一步须由对应模拟事件确认，不是所有患者都需要检查或取药。",
+  "services": [
+    "挂号与咨询",
+    "门诊候诊",
+    "检验",
+    "影像",
+    "缴费与药房",
+    "无障碍与休息"
+  ],
+  "documents": [
+    {
+      "id": "service:checkin",
+      "title": "预约后的报到",
+      "keywords": [
+        "预约",
+        "挂好了",
+        "报到",
+        "候诊",
+        "挂号成功"
+      ],
+      "text": "本示例医院：已预约的患者先核对预约科室及时间，再前往对应候诊区报到，留意叫号。预约不等于已经报到。",
+      "source": "Synthetic Hospital v1：虚构种子，仅用于软件测试"
+    },
+    {
+      "id": "service:registration",
+      "title": "首次就诊与挂号",
+      "keywords": [
+        "第一次",
+        "没挂号",
+        "初诊",
+        "挂号",
+        "证件"
+      ],
+      "text": "本示例医院：首次就诊可前往一楼挂号处或服务台咨询，准备身份证件及已有预约信息。具体所需材料请以真实医院通知为准。",
+      "source": "Synthetic Hospital v1：虚构种子，仅用于软件测试"
+    },
+    {
+      "id": "service:payment",
+      "title": "缴费与取药",
+      "keywords": [
+        "缴费",
+        "付钱",
+        "处方",
+        "拿药",
+        "取药"
+      ],
+      "text": "本示例医院：就诊后按照医嘱和缴费提示办理；完成相应缴费后按取药通知前往一楼 B 区药房。机器人无法查询处方、缴费状态或药品库存。",
+      "source": "Synthetic Hospital v1：虚构种子，仅用于软件测试"
+    },
+    {
+      "id": "service:accessibility",
+      "title": "行动不便与人工协助",
+      "keywords": [
+        "轮椅",
+        "行动不便",
+        "走不动",
+        "无障碍",
+        "电梯"
+      ],
+      "text": "本示例医院：需要轮椅、乘梯或人工陪同服务时请联系现场服务台。本系统没有接入电梯或轮椅调度，无法承诺跨楼层导航。",
+      "source": "Synthetic Hospital v1：虚构种子，仅用于软件测试"
+    },
+    {
+      "id": "service:hours",
+      "title": "开放时间查询边界",
+      "keywords": [
+        "几点",
+        "开放时间",
+        "下班",
+        "营业",
+        "周末"
+      ],
+      "text": "示例数据没有录入科室或药房的开放时间。请向现场服务台核实，系统不可猜测。",
+      "source": "Synthetic Hospital v1：虚构种子，仅用于软件测试"
+    }
+  ]
+}

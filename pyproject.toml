@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linbot-voice-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "Hospital companion text agent with mock robot tools"
 requires-python = ">=3.10"
 dependencies = []
@@ -16,4 +16,4 @@ linbot = "linbot_voice_agent.cli:main"
 include = ["linbot_voice_agent*"]
 
 [tool.setuptools.package-data]
-linbot_voice_agent = ["data/*.json"]
+linbot_voice_agent = ["data/*.json", "data/seeds/*.json"]

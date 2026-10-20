@@ -4,7 +4,7 @@
 - https://github.com/VitaDynamics/vbot_ros2_msgs
 - https://github.com/fang2544/-shenicest-fission-Linbot-a-robot-dog-for-AI-Patient-Companion
 
-本次仅实现独立文本核心，未复制上述仓库代码，未核验当前固件接口。不要根据消息类型名假定实际话题或服务名。
+当前已实现独立文本核心与虚拟医院事件模拟，未复制上述仓库代码，未核验当前固件接口。不要根据消息类型名假定实际话题或服务名。
 
 ## 1. 采集真机接口（先只读）
 
@@ -21,7 +21,7 @@ ros2 node list
 
 ## 2. 先做纯语音问答
 
-新增独立 ament_python 适配包，依赖此核心。订阅已验证的 ASR 话题，将最终识别结果入队；工作线程调用 Agent，单一 TTS 适配器播报。消息去重、低置信度澄清、播报回声过滤、唤醒会话超时和打断需分别验证。
+新增独立 ament_python 适配包，依赖此核心。订阅已验证的 ASR 话题，将最终识别结果入队；工作线程调用 NaturalAgent，单一 TTS 适配器播报。消息去重、低置信度澄清、播报回声过滤、唤醒会话超时和打断需分别验证。
 
 ## 3. 继续使用 MockRobot
 

@@ -1,2 +1,2 @@
-"""Stage 1: text interaction only; no physical robot control."""
-__version__ = "0.1.0"
+"""Natural-language companion and synthetic hospital simulator."""
+__version__ = "0.2.0"
