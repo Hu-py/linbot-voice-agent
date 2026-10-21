@@ -8,6 +8,9 @@ no robot session, no motion command, no SDK import.
 Dynamic patient state stays server-side inside a per-session ``SyntheticEnvironment``.
 The device Skill only declares when and how to call the tools; it never hard-codes
 the virtual patient's changing facts.
+
+Security defaults: bind ``127.0.0.1`` unless explicitly told otherwise; the device
+address ``192.168.127.2`` is only used on the trusted robot internal network.
 """
 import argparse
 import json
@@ -22,10 +25,18 @@ from .simulator import SyntheticEnvironment
 
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_NAME = "linbot-hospital-mcp"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.2.0"
 MAX_BODY_BYTES = 64 * 1024
 DEFAULT_TOOL_TIMEOUT = 5.0
 SESSION_TTL = 1800.0
+DEFAULT_MAX_SESSIONS = 32
+DEFAULT_EXECUTOR_WORKERS = 8
+
+# JSON-RPC error codes (2025-06-18 transport conventions).
+PARSE_ERROR = -32700
+INVALID_REQUEST = -32600
+METHOD_NOT_FOUND = -32601
+INTERNAL_ERROR = -32603
 
 
 # ---------------------------------------------------------------------------
@@ -62,6 +73,10 @@ TOOL_DEFINITIONS = [
 ]
 
 
+class SessionLimitError(RuntimeError):
+    """Raised when the session cap is reached."""
+
+
 class McpSession:
     """One isolated SyntheticEnvironment per MCP session."""
 
@@ -81,29 +96,38 @@ class McpSession:
 
 
 class SessionStore:
-    """Thread-safe session registry with bounded TTL expiry."""
+    """Thread-safe, bounded, TTL-expiring session registry."""
 
-    def __init__(self, seed_dir, patient_id="patient_01", ttl=SESSION_TTL):
+    def __init__(self, seed_dir, patient_id="patient_01", ttl=SESSION_TTL,
+                 max_sessions=DEFAULT_MAX_SESSIONS):
         self.seed_dir = seed_dir
         self.patient_id = patient_id
         self.ttl = ttl
+        self.max_sessions = max_sessions
         self._lock = threading.Lock()
         self._sessions = {}
 
+    def _purge_expired(self, now):
+        stale = [sid for sid, s in self._sessions.items() if s.expired(now)]
+        for sid in stale:
+            self._sessions.pop(sid, None)
+
     def create(self):
-        session = McpSession(self.seed_dir, self.patient_id, self.ttl)
+        now = time.monotonic()
         with self._lock:
+            self._purge_expired(now)
+            if len(self._sessions) >= self.max_sessions:
+                raise SessionLimitError(f"已达最大会话数 {self.max_sessions}，请稍后重试")
+            session = McpSession(self.seed_dir, self.patient_id, self.ttl)
             self._sessions[session.id] = session
-        return session
+            return session
 
     def get(self, session_id):
-        if not session_id:
+        if not session_id or not isinstance(session_id, str):
             return None
         now = time.monotonic()
         with self._lock:
-            stale = [sid for sid, s in self._sessions.items() if s.expired(now)]
-            for sid in stale:
-                self._sessions.pop(sid, None)
+            self._purge_expired(now)
             session = self._sessions.get(session_id)
             if session is None:
                 return None
@@ -171,7 +195,8 @@ class ToolArgumentError(ValueError):
 
 
 def _validate(definition, args):
-    args = args or {}
+    if args is None:
+        args = {}
     if not isinstance(args, dict):
         raise ToolArgumentError("arguments 必须是对象")
     schema = definition["inputSchema"]
@@ -204,6 +229,7 @@ class McpHttpHandler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         return
 
+    # -- response helpers ---------------------------------------------------
     def _send_json(self, status, payload, extra_headers=None):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -225,65 +251,74 @@ class McpHttpHandler(BaseHTTPRequestHandler):
             "error": {"code": code, "message": message},
         })
 
+    def _accepted(self):
+        self.send_response(202)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    # -- routing ------------------------------------------------------------
     def do_GET(self):
         if self.path == "/healthz":
             self._send_json(200, {"status": "ok", "service": SERVER_NAME})
         else:
-            self._rpc_error(-32601, f"未知路径: {self.path}", http_status=404)
+            self._rpc_error(METHOD_NOT_FOUND, f"未知路径: {self.path}", http_status=404)
 
     def do_POST(self):
         if self.path != "/mcp":
-            self._rpc_error(-32601, f"未知路径: {self.path}", http_status=404)
+            self._rpc_error(METHOD_NOT_FOUND, f"未知路径: {self.path}", http_status=404)
             return
 
         # Read exactly Content-Length bytes; never block waiting for a fixed cap.
         try:
             length = int(self.headers.get("Content-Length", 0))
-        except ValueError:
-            length = 0
+        except (TypeError, ValueError):
+            length = -1
+        if length < 0:
+            self._rpc_error(INVALID_REQUEST, "无效的 Content-Length", http_status=411)
+            return
         if length > MAX_BODY_BYTES:
-            self._rpc_error(-32600, "请求体超过大小上限", http_status=413)
+            self._rpc_error(INVALID_REQUEST, "请求体超过大小上限", http_status=413)
             return
         raw = self.rfile.read(length) if length else b""
         try:
             request = json.loads(raw.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError):
-            self._rpc_error(-32700, "解析错误：请求不是合法 JSON")
+            self._rpc_error(PARSE_ERROR, "解析错误：请求不是合法 JSON")
             return
         if not isinstance(request, dict) or request.get("jsonrpc") != "2.0":
-            self._rpc_error(-32600, "无效请求：需要 jsonrpc=2.0 对象", request.get("id"))
+            self._rpc_error(INVALID_REQUEST, "无效请求：需要 jsonrpc=2.0 对象",
+                            request.get("id"))
             return
 
         method = request.get("method")
         request_id = request.get("id")
-        params = request.get("params") or {}
+        # Notifications carry no id; anything else with an id must be scalar.
+        if method != "notifications/initialized" and request_id is not None:
+            if not isinstance(request_id, (str, int, float)) or isinstance(request_id, bool):
+                self._rpc_error(INVALID_REQUEST, "id 必须为字符串或数字", http_status=400)
+                return
+        params = request.get("params")
+        if params is None:
+            params = {}
+        if not isinstance(params, dict):
+            self._rpc_error(INVALID_REQUEST, "params 必须是对象", request_id)
+            return
+
         session_header = self.headers.get("Mcp-Session-Id")
 
-        # notifications/initialized: no id, expects 202 empty
         if method == "notifications/initialized":
-            self.send_response(202)
-            self.send_header("Content-Length", "0")
-            self.end_headers()
+            # Notification: no id; 202 empty regardless of optional session header.
+            self._accepted()
             return
 
         if method == "initialize":
-            client_version = params.get("protocolVersion")
-            if client_version != PROTOCOL_VERSION:
-                self._rpc_error(-32600,
-                                f"协议版本不兼容: 需要 {PROTOCOL_VERSION}, 收到 {client_version}",
-                                request_id)
-                return
-            session = self.server.store.create()
-            result = {
-                "protocolVersion": PROTOCOL_VERSION,
-                "capabilities": {"tools": {}},
-                "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
-            }
-            self._send_json(200, {"jsonrpc": "2.0", "id": request_id, "result": result},
-                            {"Mcp-Session-Id": session.id})
-            return
+            return self._handle_initialize(request_id, params)
 
         if method == "tools/list":
+            session = self.server.store.get(session_header)
+            if session is None:
+                self._rpc_error(INVALID_REQUEST, "缺少有效会话，请先 initialize", request_id)
+                return
             self._send_json(200, {
                 "jsonrpc": "2.0", "id": request_id,
                 "result": {"tools": TOOL_DEFINITIONS},
@@ -291,24 +326,57 @@ class McpHttpHandler(BaseHTTPRequestHandler):
             return
 
         if method == "tools/call":
-            self._handle_tool_call(request_id, params, session_header)
-            return
+            return self._handle_tool_call(request_id, params, session_header)
 
-        self._rpc_error(-32601, f"未知方法: {method}", request_id)
+        self._rpc_error(METHOD_NOT_FOUND, f"未知方法: {method}", request_id)
+
+    # -- methods ------------------------------------------------------------
+    def _handle_initialize(self, request_id, params):
+        client_version = params.get("protocolVersion")
+        if not isinstance(client_version, str) or client_version != PROTOCOL_VERSION:
+            self._rpc_error(INVALID_REQUEST,
+                            f"协议版本不兼容: 需要 {PROTOCOL_VERSION}, 收到 {client_version}",
+                            request_id)
+            return
+        client_info = params.get("clientInfo")
+        if client_info is not None and not isinstance(client_info, dict):
+            self._rpc_error(INVALID_REQUEST, "clientInfo 必须是对象", request_id)
+            return
+        try:
+            session = self.server.store.create()
+        except SessionLimitError as exc:
+            self._rpc_error(INVALID_REQUEST, str(exc), request_id)
+            return
+        result = {
+            "protocolVersion": PROTOCOL_VERSION,
+            "capabilities": {"tools": {}},
+            "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
+        }
+        self._send_json(200, {"jsonrpc": "2.0", "id": request_id, "result": result},
+                        {"Mcp-Session-Id": session.id})
 
     def _handle_tool_call(self, request_id, params, session_header):
         name = params.get("name")
-        arguments = params.get("arguments") or {}
+        arguments = params.get("arguments", {})
+        if not isinstance(name, str) or not name:
+            self._tool_failure(request_id, "invalid_arguments", "缺少工具名 name")
+            return
+        if arguments is None:
+            arguments = {}
+        if not isinstance(arguments, dict):
+            self._tool_failure(request_id, "invalid_arguments", "arguments 必须是对象", tool=name)
+            return
+
         session_id = session_header or arguments.get("session_id")
         session = self.server.store.get(session_id)
         if session is None:
             self._tool_failure(request_id, "unknown_session",
-                               "会话不存在或已过期，请先 initialize")
+                               "会话不存在或已过期，请先 initialize", tool=name)
             return
 
         registry = self.server.tools
         if name not in registry:
-            self._tool_failure(request_id, "unknown_tool", f"未注册工具: {name}")
+            self._tool_failure(request_id, "unknown_tool", f"未注册工具: {name}", tool=name)
             return
         definition, handler = registry[name]
         try:
@@ -317,10 +385,10 @@ class McpHttpHandler(BaseHTTPRequestHandler):
             self._tool_failure(request_id, "invalid_arguments", str(exc), tool=name)
             return
 
-        # Bounded execution: a hung tool becomes isError, never an unsafe retry.
-        executor = ThreadPoolExecutor(max_workers=1)
+        # Bounded execution on a shared pool; a hung tool becomes isError and the
+        # pool stays reusable instead of leaking a thread per request.
         try:
-            future = executor.submit(handler, session.env, validated)
+            future = self.server.executor.submit(handler, session.env, validated)
             payload = future.result(timeout=self.server.tool_timeout)
         except FutureTimeout:
             self._tool_failure(request_id, "tool_timeout",
@@ -328,10 +396,8 @@ class McpHttpHandler(BaseHTTPRequestHandler):
             return
         except Exception as exc:  # noqa: BLE001 - surface as tool error
             self._tool_failure(request_id, "tool_error", f"{type(exc).__name__}: {exc}",
-                               tool=name)
+                                tool=name)
             return
-        finally:
-            executor.shutdown(wait=False)
 
         self._send_json(200, {
             "jsonrpc": "2.0", "id": request_id,
@@ -355,32 +421,43 @@ class McpHttpHandler(BaseHTTPRequestHandler):
         })
 
 
-def create_server(host, port, store, tools=None, tool_timeout=DEFAULT_TOOL_TIMEOUT):
+def create_server(host, port, store, tools=None, tool_timeout=DEFAULT_TOOL_TIMEOUT,
+                  executor_workers=DEFAULT_EXECUTOR_WORKERS):
     httpd = ThreadingHTTPServer((host, port), McpHttpHandler)
     httpd.store = store
     httpd.tools = tools or build_default_tools()
     httpd.tool_timeout = tool_timeout
+    httpd.executor = ThreadPoolExecutor(max_workers=executor_workers, thread_name_prefix="mcp-tool")
+    # Close the shared pool when the socket server closes; no per-call pool leak.
+    httpd._mcp_executor = httpd.executor
     return httpd
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Linbot 医院陪诊 HTTP MCP 服务（只读工具）")
     parser.add_argument("--host", default="127.0.0.1",
-                        help="监听地址；设备部署绑定 192.168.127.2，本地测试用 127.0.0.1")
+                        help="默认仅监听 127.0.0.1；设备部署才绑定可信内网 192.168.127.2")
     parser.add_argument("--port", type=int, default=18080)
     parser.add_argument("--seed-dir", default=str(files("linbot_voice_agent").joinpath("data/seeds")),
                         help="虚拟医院种子目录（hospital.json/workflows.json/patient_profiles.json）")
     parser.add_argument("--patient", default="patient_01")
     parser.add_argument("--tool-timeout", type=float, default=DEFAULT_TOOL_TIMEOUT)
+    parser.add_argument("--max-sessions", type=int, default=DEFAULT_MAX_SESSIONS)
     args = parser.parse_args(argv)
 
-    store = SessionStore(args.seed_dir, args.patient)
+    if not args.host.startswith("127.") and args.host not in ("::1", "localhost"):
+        print(f"警告：绑定非回环地址 {args.host}，仅限可信机器人内网，禁止暴露到公网。")
+
+    store = SessionStore(args.seed_dir, args.patient, max_sessions=args.max_sessions)
     httpd = create_server(args.host, args.port, store, tool_timeout=args.tool_timeout)
     print(f"MCP 监听 http://{args.host}:{args.port}/mcp  protocol={PROTOCOL_VERSION}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        httpd.shutdown()
+        pass
+    finally:
+        httpd._mcp_executor.shutdown(wait=False)
+        httpd.server_close()
 
 
 if __name__ == "__main__":

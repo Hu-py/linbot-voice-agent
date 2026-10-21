@@ -112,6 +112,19 @@ class LifecycleAndDiscoveryTests(McpTestBase):
         })
         self.assertEqual(body["error"]["code"], -32600)
 
+    def test_non_dict_params_rejected(self):
+        _, _, body = self.post({
+            "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": ["nope"],
+        })
+        self.assertEqual(body["error"]["code"], -32600)
+
+    def test_max_sessions_enforced(self):
+        from linbot_voice_agent.mcp_server import SessionLimitError
+        bounded = SessionStore(str(SEED_DIR), max_sessions=1)
+        bounded.create()
+        with self.assertRaises(SessionLimitError):
+            bounded.create()
+
     def test_malformed_json_and_unknown_method(self):
         # Malformed JSON returns a JSON-RPC parse-error envelope (HTTP 200).
         status, _, body = self.post_raw(b"{not json")

@@ -83,15 +83,43 @@ curl -fsS -X PUT "$VBOT_API_URL/api/skills/hospital-companion" \
 - 先确认交付镜像的 harness 支持 `18080` MCP 与 `8787` 内容 API；不支持则联系平台，不要改服务配置。
 - 本服务不依赖 Aorta SDK、ROS 桥接或实时样本，因此 MCP 工具本身的协议测试可离线完成；但“Agent 是否真的调用、Skill 是否激活”必须在真机新 Turn 验证。
 
-## 7. 已实现 vs 待真机验证
+## 7. 服务加固（0.2.0）
+
+- 默认仅监听 `127.0.0.1`；绑定非回环地址时打印可信内网警告，不暴露公网。
+- `initialize` 校验 `protocolVersion` 与 `clientInfo` 类型；`tools/list`、`tools/call` 要求有效会话；`params`/`arguments` 非对象直接拒绝。
+- 最大会话数（默认 32）、TTL 过期清理、请求体上限 64KiB；超限返回 JSON-RPC 错误，不无限建会话。
+- 工具执行改用共享有界线程池并带超时，超时返回 `tool_timeout`，不再每次请求新建池，避免线程泄漏。
+- 畸形 JSON、错误 id/params、未知方法均返回 JSON-RPC 错误信封，不抛出未捕获异常。
+
+## 8. Ubuntu 白天自由问答（外部 LLM + MCP，非真机）
+
+终端 1：
+
+```bash
+python3 -m linbot_voice_agent.mcp_server --host 127.0.0.1 --port 18080
+```
+
+终端 2（兼容 Chat Completions）：
+
+```bash
+OPENAI_BASE_URL=https://端点/v1 OPENAI_MODEL=模型 OPENAI_API_KEY=key \
+python3 -m linbot_voice_agent.llm_mcp_agent \
+  --mcp-url http://127.0.0.1:18080/mcp --interactive
+```
+
+模型不可用会明确报错；`--fallback-rule` 仅为显式离线演示，输出带 `[规则兜底，非 LLM]`，不计入模型测试。
+
+## 9. 已实现 vs 待真机验证
 
 ### 已在本地实现并测试
-- HTTP MCP 生命周期：initialize / notifications/initialized / tools/list / tools/call。
-- 三个只读工具与参数校验、`isError` 错误契约、会话隔离、工具超时。
-- `hospital-companion/SKILL.md`（只写规则，不含动态患者事实）。
-- 端到端协议测试（发现、调用、超时、隔离、异常），并保留原有全部测试。
+- HTTP MCP 生命周期：initialize / notifications/initialized / tools/list / tools/call，含版本/会话/参数校验与资源限制。
+- 三个只读工具、`isError` 错误契约、会话隔离、工具超时、最大会话与过期清理。
+- 独立 MCP 客户端测试（多轮、重新初始化、错误恢复、Skill 名称参数一致性）。
+- LLM+MCP 闭环：模型自主决策工具调用、参数校验、结果回喂、多轮历史与工具日志；模型缺失明确报错。
+- `hospital-companion/SKILL.md`（只写规则，不含动态患者事实）；原有模拟医院与全部测试保留。
 
 ### 必须连上 VBOT 真机后才能验证
-- harness 是否在 `192.168.127.2:18080` 发现并成功调用工具。
+- harness 是否在 `192.168.127.2:18080` 发现并成功调用工具（外部 LLM 模拟通过 ≠ 设备 Agent 通过）。
 - Skill 通过 8787 注入后的实际激活与新 Turn 行为。
 - 应用版本 V1.6.0、路由/ACL、harness 兼容性；MCP 与 Aorta/语音导航的后续衔接。
+- 逐项只读检查见 `docs/device-readiness-checklist.md`。
