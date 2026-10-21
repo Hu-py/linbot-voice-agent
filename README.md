@@ -4,6 +4,22 @@ v0.2：**LLM 理解多轮需求 + 医院知识检索 + 受控工具 + 虚拟医�
 
 这里是软件原型，所有默认医院/患者数据均为虚构。导航、乘梯、求助均在模拟器内；未接入真实机器人、医院系统或医护联络服务。
 
+## VBOT EDU 接入检查
+
+接入依据改为官方 [vbot-lab](https://github.com/VitaDynamics/vbot-lab)。在运行项目的 Ubuntu 中执行：
+
+```bash
+python3 -m linbot_voice_agent --vbot-check
+```
+
+该命令仅输出当前机器的 Python、SDK 包版本和工具路径，不连接机器人、不调用模型、不安装依赖。
+默认档案记录足式 EDU 与用户提供的版本 `v5.0.16-2026070701edu`，应用版本仍为未知。
+这串设备版本不能证明与官方文档目标应用 V1.6.0 兼容。自定义档案可通过 `--vbot-profile path/to/profile.json` 传入。
+退出码 0 只表示报告生成成功，**不表示真机就绪**；报告中的 `hardware_ready` 始终为 false。
+
+已增加独立的 `FinalAsrFilter`，供后续语音适配器过滤未知来源、空文本和重复投递；它尚未接到 CLI，不能直接订阅机械狗或播放语音。
+现有模拟演示保持不变。Aorta、ROS 2、ASR/TTS 与导航的分阶段接入方法见 [真机接入准备](docs/phase2.md)。
+
 ## 1. 无密钥先跑完整心内科案例
 
 Python 3.10+，无第三方运行依赖：

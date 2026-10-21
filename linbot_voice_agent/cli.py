@@ -21,7 +21,23 @@ def main():
     parser.add_argument('--demo',action='store_true')
     parser.add_argument('--show-tools',action='store_true')
     parser.add_argument('--show-sources',action='store_true')
+    parser.add_argument('--vbot-check',action='store_true',help='只读检查当前机器环境，不连接机器人或调用模型')
+    parser.add_argument('--vbot-profile',help='VBOT 设备档案 JSON，仅与 --vbot-check 同用')
     args=parser.parse_args()
+    if args.vbot_profile and not args.vbot_check:
+        parser.error('--vbot-profile 需要 --vbot-check')
+    if args.vbot_check:
+        if args.mode != 'offline' or args.synthetic or args.scenario_demo or args.demo or args.hospital:
+            parser.error('--vbot-check 不与对话、模型或演示模式同时使用')
+        from pathlib import Path
+        from .vbot import readiness_report
+        profile_path = Path(args.vbot_profile) if args.vbot_profile else files('linbot_voice_agent').joinpath('data/vbot-profile.json')
+        try:
+            profile = json.loads(profile_path.read_text(encoding='utf-8'))
+            print(json.dumps(readiness_report(profile),ensure_ascii=False,indent=2))
+        except (OSError,ValueError) as exc:
+            parser.error(str(exc))
+        return
     if args.hospital and (args.synthetic or args.scenario_demo): parser.error('--hospital 不能与虚拟场景同时使用')
     if args.synthetic and args.mode!='llm' and not args.scenario_demo:
         parser.error('自由对话的虚拟医院需 --mode llm；无密钥请用 --scenario-demo')
