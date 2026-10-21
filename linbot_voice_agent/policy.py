@@ -54,14 +54,17 @@ class ControlledTools:
         self.pending = PendingAction(uuid4().hex, action, destination, self.clock() + self.ttl)
         return self.pending
 
-    def _execute(self, action, destination=None):
+    def _execute(self, action, destination=None, confirmed=False):
         try:
-            event = self.robot.execute(action, destination)
-            if not isinstance(event, dict) or type(event.get('ok')) is not bool or event.get('simulated') is not True:
-                raise ValueError('This release requires simulated tool feedback')
+            execute = self.robot.execute_confirmed if confirmed and hasattr(self.robot, 'execute_confirmed') else self.robot.execute
+            event = execute(action, destination)
+            if not isinstance(event, dict) or type(event.get('ok')) is not bool or type(event.get('simulated')) is not bool:
+                raise ValueError('Invalid tool feedback')
+            if event['simulated'] != self.robot.simulated:
+                raise ValueError('Adapter feedback provenance mismatch')
             return dict(event)
         except Exception:
-            return {'tool': action, 'ok': False, 'simulated': True, 'error': 'adapter_failure'}
+            return {'tool': action, 'ok': False, 'simulated': getattr(self.robot, 'simulated', False), 'error': 'adapter_failure'}
 
     def execute_read_or_stop(self, action):
         if action not in {'pause', 'cancel', 'status', 'request_help'}:
@@ -78,6 +81,6 @@ class ControlledTools:
             if not self.knowledge.destination_available(pending.destination):
                 raise PolicyError('destination expired')
             events = [self._execute('cancel')]
-            if events[-1]['ok']: events.append(self._execute('navigate', pending.destination))
+            if events[-1]['ok']: events.append(self._execute('navigate', pending.destination, confirmed=True))
             return events
-        return [self._execute('resume')]
+        return [self._execute('resume', confirmed=True)]

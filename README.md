@@ -1,8 +1,38 @@
 # Linbot Voice Agent · 聆灵自然语言陪诊 Agent
 
-v0.2：**LLM 理解多轮需求 + 医院知识检索 + 受控工具 + 虚拟医院事件闭环**。
+v0.3：**自然语言任务理解 + 明确确认 + 欢迎动作 + 一楼二维路径规划 + 模拟导航 + 抵达播报与共享状态**。
 
-这里是软件原型，所有默认医院/患者数据均为虚构。导航、乘梯、求助均在模拟器内；未接入真实机器人、医院系统或医护联络服务。
+## 一楼二维陪诊 Demo
+
+在 Ubuntu 项目目录运行，无需 LLM 密钥或 SDK：
+
+```bash
+python3 -m linbot_voice_agent --embodied-demo --backend mock
+```
+
+固定 MockModel 演示入口→服务台→挂号处。患者确认后才执行 welcome_wave 与模拟导航；抵达更新 visited，挂号完成需要独立可信事件。地图坐标明确标记 synthetic，不能用于真机。`--backend vbot-aorta` 或 `--backend vbot-ros2` 仅输出 dry-run，不连接设备。
+
+[二维 MVP 架构、边界与测试](docs/embodied_mvp.md)。保留既有 LLM、检索、患者流程、CLI 和旧三层知识/模拟器；本轮新增导航仅一楼，不使用电梯或楼梯。
+
+这里是软件原型，所有默认医院/患者数据均为虚构。导航、乘梯、求助均在模拟器内；未接入真实运动、医院系统或医护联络服务。可选 ROS 2 语音适配器已提供，真机语音需现场验收。
+
+## 可运行的 ROS 2 语音闭环
+
+新增入口把最终识别文本、对话核心、TTS 请求和播报完成事件串起来，默认离线规则回答，不需要 API 密钥：
+
+```bash
+source /opt/ros/humble/setup.bash
+# 再加载与设备版本匹配的 aorta_msgs / function_msgs 工作空间
+python3 -m linbot_voice_agent.ros_voice --check
+python3 -m linbot_voice_agent.ros_voice --execute --provider body --duration 300
+```
+
+需要实际可发现的 `/speech/asr_result`、`/voice/event` 和 `/set_speak`；接口缺失时返回错误，不假装运行。
+播放成功由关联的完成事件确认；服务受理不算播放完成。采用半双工，处理/播报期间不接受新语音，结束后有 0.8 秒回声保护。
+`--mode llm` 可使用既有模型配置，但识别文本和检索内容会发送给配置的模型服务。
+运动仍为 MockRobot，不会驱动机械狗行走。
+
+[完整安装、ROS 2 自动闭环测试和真机实验步骤](docs/voice-loop.md)。自动测试使用真实 ROS 2 通信和模拟设备，不代表已听到真实声音。
 
 ## VBOT EDU 接入检查
 
@@ -17,7 +47,7 @@ python3 -m linbot_voice_agent --vbot-check
 这串设备版本不能证明与官方文档目标应用 V1.6.0 兼容。自定义档案可通过 `--vbot-profile path/to/profile.json` 传入。
 退出码 0 只表示报告生成成功，**不表示真机就绪**；报告中的 `hardware_ready` 始终为 false。
 
-已增加独立的 `FinalAsrFilter`，供后续语音适配器过滤未知来源、空文本和重复投递；它尚未接到 CLI，不能直接订阅机械狗或播放语音。
+`FinalAsrFilter` 已用于独立的 `linbot-voice` / `ros_voice` 入口，过滤未知来源、空文本和重复投递；原文本 CLI 保持独立。
 现有模拟演示保持不变。Aorta、ROS 2、ASR/TTS 与导航的分阶段接入方法见 [真机接入准备](docs/phase2.md)。
 
 ## 1. 无密钥先跑完整心内科案例

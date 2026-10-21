@@ -23,7 +23,21 @@ def main():
     parser.add_argument('--show-sources',action='store_true')
     parser.add_argument('--vbot-check',action='store_true',help='只读检查当前机器环境，不连接机器人或调用模型')
     parser.add_argument('--vbot-profile',help='VBOT 设备档案 JSON，仅与 --vbot-check 同用')
+    parser.add_argument('--embodied-demo',action='store_true',help='一楼入口到挂号处二维具身闭环')
+    parser.add_argument('--backend',choices=('mock','vbot-aorta','vbot-ros2'),default='mock',help='VBot 后端仅 dry-run')
+    parser.add_argument('--map',dest='map_path',help='独立的一楼二维地图 JSON')
     args=parser.parse_args()
+    if args.embodied_demo:
+        if args.vbot_check or args.vbot_profile or args.synthetic or args.scenario_demo or args.demo or args.hospital:
+            parser.error('--embodied-demo 不与其他演示或诊断模式混用')
+        from .embodied import run_demo
+        try:
+            run_demo(args.backend, args.map_path, ChatModel() if args.mode == 'llm' else None)
+        except (ValueError,KeyError,OSError,RuntimeError) as exc:
+            parser.error(str(exc))
+        return
+    if args.map_path or args.backend != 'mock':
+        parser.error('--backend/--map 需要 --embodied-demo')
     if args.vbot_profile and not args.vbot_check:
         parser.error('--vbot-profile 需要 --vbot-check')
     if args.vbot_check:

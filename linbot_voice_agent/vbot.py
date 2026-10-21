@@ -65,7 +65,7 @@ def readiness_report(profile, host=None):
     issues.extend([
         '未验证设备会话配置、路由 ACL、消息类型、QoS 或实时样本。',
         'ROS 2 仅桥接 Aorta 的部分接口；安装 Humble 不等于可访问机器人。',
-        '本项目仍使用模拟机器人，尚无真实导航、语音订阅或 TTS 适配器。',
+        '运动仍使用模拟机器人；可选 ROS 2 语音适配器需单独执行 --check 和现场验收。',
     ])
     return {
         'scope': 'offline_inventory',

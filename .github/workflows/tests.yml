@@ -18,3 +18,6 @@ jobs:
       - run: linbot --demo --show-tools
       - run: linbot --scenario-demo
       - run: linbot --vbot-check
+      - run: linbot --embodied-demo --backend mock
+      - run: linbot --embodied-demo --backend vbot-aorta
+      - run: linbot --embodied-demo --backend vbot-ros2

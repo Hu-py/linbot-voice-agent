@@ -1,0 +1,30 @@
+{
+  "map_id": "synthetic_hospital_1f_v1",
+  "synthetic": true,
+  "floor_id": 1,
+  "coordinate_frame": "synthetic_1f_map",
+  "resolution": 0.1,
+  "origin": {"x": 0, "y": 0, "yaw": 0},
+  "robot_radius": 0.2,
+  "walkable_regions": [[0, 0, 12, 10]],
+  "obstacle_regions": [[4, 3, 6, 7]],
+  "nodes": {
+    "entrance": {"x": 1, "y": 1, "yaw": 0},
+    "service_desk": {"x": 2, "y": 2, "yaw": 0},
+    "registration": {"x": 8, "y": 2, "yaw": 0},
+    "payment": {"x": 2, "y": 8, "yaw": 0},
+    "pharmacy": {"x": 8, "y": 8, "yaw": 0},
+    "restroom": {"x": 1, "y": 6, "yaw": 0},
+    "rest_area": {"x": 3, "y": 5, "yaw": 0}
+  },
+  "navigation_goals": {"entrance": "entrance", "service_desk": "service_desk", "registration": "registration", "payment": "payment", "pharmacy": "pharmacy", "restroom": "restroom", "rest_area": "rest_area"},
+  "edges": [
+    {"from": "entrance", "to": "service_desk", "weight": 1.4142135624},
+    {"from": "service_desk", "to": "registration", "weight": 6},
+    {"from": "service_desk", "to": "payment", "weight": 6},
+    {"from": "payment", "to": "pharmacy", "weight": 6},
+    {"from": "service_desk", "to": "restroom", "weight": 4.1231056256},
+    {"from": "service_desk", "to": "rest_area", "weight": 3.1622776602}
+  ],
+  "provenance": "Synthetic coordinates for software tests only; NOT surveyed hospital data. Never use on hardware."
+}
