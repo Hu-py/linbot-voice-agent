@@ -1,10 +1,14 @@
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
+@runtime_checkable
 class RobotPort(Protocol):
+    status: str
+    simulated: bool
     def execute(self, action: str, destination: str | None = None) -> dict: ...
 
 class MockRobot:
     """Only simulated lifecycle events. Does not connect to ROS or hardware."""
+    simulated = True
     def __init__(self):
         self.status = "idle"
         self.destination = None

@@ -5,7 +5,7 @@ from .agent import Reply
 from .knowledge import Knowledge
 from .llm import ModelError
 from .policy import ControlledTools, PolicyError, validate_plan
-from .robot import MockRobot
+from .robot import MockRobot, RobotPort
 
 URGENT = ('晕倒', '救命', '呼吸困难', '急救', '有人倒下', '胸痛')
 MEDICAL = ('吃什么药', '用药', '剂量', '诊断', '什么病', '治疗', '药怎么吃')
@@ -27,9 +27,8 @@ class NaturalAgent:
             knowledge, robot = environment.knowledge, environment.robot
         self.knowledge = knowledge or Knowledge()
         self.robot = robot or MockRobot()
-        # Hardware adapters are intentionally unavailable in this release.
-        if not isinstance(self.robot, MockRobot):
-            raise ValueError('v0.2 只允许 MockRobot；真实硬件接入需单独实现异步安全层')
+        if not isinstance(self.robot, RobotPort):
+            raise ValueError('机器人必须实现 RobotPort 状态与执行接口')
         self.tools = ControlledTools(self.robot, self.knowledge, **({'clock': clock} if clock else {}))
         self.history = deque(maxlen=12)
         self.destination = None
@@ -51,7 +50,7 @@ class NaturalAgent:
             pending = None
         state = {'destination': self.destination,
                 'pending': {'action': pending.action, 'destination': pending.destination} if pending else None,
-                'robot_status': self.robot.status, 'simulated': True}
+                'robot_status': self.robot.status, 'simulated': self.robot.simulated}
         if self.environment:
             state['patient'] = self.environment.patient.snapshot()
             state['workflow_next'] = self.environment.workflow.next_step(self.environment.patient)
