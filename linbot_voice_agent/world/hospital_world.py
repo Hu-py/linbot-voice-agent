@@ -30,6 +30,16 @@ class HospitalWorld:
         self.patient = PatientState.from_dict(next(p for p in profiles if p['id'] == patient_id))
         map_path = map_path or root.joinpath('maps/synthetic_hospital_1f.json')
         self.map = SpatialMap.load(map_path)
+        # Map-local extensions leave the legacy three-floor seed corpus unchanged.
+        for place in json.loads(Path(map_path).read_text()).get('places', []):
+            if place['id'] in self.knowledge.places or place.get('floor') != 1:
+                raise ValueError('Map extension must be a new first-floor place')
+            self.knowledge.places[place['id']] = place
+            self.knowledge.data['places'].append(place)
+            self.knowledge._add({'id': 'place:' + place['id'], 'title': place['name'],
+                'text': place['name'] + '位于' + place['location'] + '。',
+                'keywords': place['aliases'], 'place_id': place['id'],
+                'source': 'Synthetic floor-one map extension'})
         for destination in self.map.goals:
             if self.knowledge.places.get(destination, {}).get('floor') != 1:
                 raise ValueError('Map goal must be a known first-floor place')

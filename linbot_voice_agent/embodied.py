@@ -30,12 +30,18 @@ class EmbodiedAgent(NaturalAgent):
 
     def _action(self, action, destination=None):
         if action == 'navigate':
+            place = self.knowledge.places.get(destination, {})
+            if place.get('floor', 1) > 1:
+                destination = 'elevator_lobby'
             try:
                 self.manager.preview(destination)
             except ValueError as exc:
                 self.tools.invalidate()
                 return Reply(str(exc) + '。仍可查询该地点的医院知识。', 'blocked')
-        return super()._action(action, destination)
+        reply = super()._action(action, destination)
+        if action == 'navigate' and destination == 'elevator_lobby' and reply.intent == 'confirm':
+            reply.text = '我可以陪你去电梯口。确认出发吗？'
+        return reply
 
     def _answer(self, text, evidence, kind='lookup'):
         reply = super()._answer(text, evidence, kind)
@@ -47,7 +53,12 @@ class EmbodiedAgent(NaturalAgent):
                 reply.events.append({'tool': 'plan_2d_route', 'nodes': list(plan.nodes),
                                      'map_id': plan.map_id, 'executed': False, 'simulated': True})
             except ValueError:
-                reply.text += '\n本轮仅执行一楼已配置路线，此目的地当前不可导航。'
+                if self.knowledge.places.get(self.destination, {}).get('floor', 1) > 1:
+                    # Keep the location fact; do not recite cross-floor route instructions.
+                    place = self.knowledge.places[self.destination]
+                    reply.text = f'{place["name"]}在{place["location"]}。我可以陪你去电梯口。'
+                else:
+                    reply.text += '\n此目的地当前不可导航。'
         return reply
 
 

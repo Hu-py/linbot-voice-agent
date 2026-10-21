@@ -76,16 +76,34 @@ class EmbodiedTests(unittest.TestCase):
             self.manager.navigate('registration')
         self.assertFalse(self.robot.gestures)
 
-    def test_unknown_and_other_floor_rejected_but_query_allowed(self):
+    def test_other_floor_offers_elevator_with_confirmation(self):
         for target in ('missing', 'cardiology'):
             with self.assertRaises(ValueError):
                 self.manager.preview(target)
         reply = self.agent.respond('心内科在哪里？')
         self.assertIn('3楼', reply.text)
-        reply = self.agent.respond('能带我过去吗？')
-        self.assertEqual(reply.intent, 'blocked')
-        self.agent.respond('确认出发。')
+        self.assertIn('我可以陪你去电梯口', reply.text)
         self.assertFalse(self.robot.gestures)
+        reply = self.agent.respond('能带我过去吗？')
+        self.assertEqual(reply.intent, 'confirm')
+        self.assertEqual(reply.text, '我可以陪你去电梯口。确认出发吗？')
+        self.assertFalse(self.robot.gestures)
+        self.agent.respond('确认出发。')
+        self.finish()
+        self.assertEqual(self.manager.active.destination, 'elevator_lobby')
+        self.assertEqual(self.manager.active.state, 'succeeded')
+        self.assertEqual(self.world.patient.current_location, 'elevator_lobby')
+        self.assertNotIn('cardiology', self.world.patient.visited)
+        self.assertEqual(self.robot.speech[-1], '到电梯口啦，我陪着你。')
+
+    def test_first_floor_clinic_is_navigable(self):
+        self.agent.respond('带我去一楼诊室')
+        self.assertFalse(self.robot.gestures)
+        self.agent.respond('确认出发。')
+        self.finish()
+        self.assertEqual(self.manager.active.state, 'succeeded')
+        self.assertIn('clinic_1f', self.world.patient.visited)
+        self.assertFalse(self.world.patient.facts['consultation_completed'])
 
     def test_unreachable_rejects_before_gesture(self):
         self.world.map.blocked_edges.add(frozenset(('service_desk', 'registration')))

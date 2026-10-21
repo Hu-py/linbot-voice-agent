@@ -152,7 +152,8 @@ class TaskManager:
                 self.world.patient.current_location = task.destination
                 self.world.patient.visited.add(task.destination)
                 name = self.world.knowledge.places[task.destination]['name']
-                if speak(self.adapter, f'【二维模拟】已到达{name}。请独立办理业务；到达不代表挂号或缴费完成。'):
+                message = '到电梯口啦，我陪着你。' if task.destination == 'elevator_lobby' else f'【二维模拟】已到达{name}。请独立办理业务；到达不代表挂号或缴费完成。'
+                if speak(self.adapter, message):
                     task.state, task.progress = 'succeeded', 1.
                 else:
                     task.state, task.reason = 'failed', 'arrival_speech_failed'
